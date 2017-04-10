@@ -34,14 +34,27 @@ namespace MSBuild_Custome
             //编译Msbuild地址
             string MSBuildPath = tbMSBPath.Text;
 
-            var psi = new ProcessStartInfo("cmd.exe", String.Format(".\{0} {1} /p:Configuration=Release", MSBuildPath,PackagePath));
-            psi.WindowStyle = ProcessWindowStyle.Normal;
-            psi.Verb = "runas";
-            var proc = Process.Start(psi);
-            proc.WaitForExit();
-        //    buttonInstall.IsEnabled = false;
-          //  buttonRemove.IsEnabled = true;
-            MessageBox.Show("Install completed!  If the 'Make EXE' option isn't showing up, reset your program defaults and reinstall Make-EXE.", "Install Completed", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
+          // var psi = new ProcessStartInfo("cmd.exe", String.Format(".\{0} {1} /p:Configuration=Release", MSBuildPath,PackagePath));
+            Process p = new Process();
+            p.StartInfo.FileName = "cmd.exe";
+            p.StartInfo.UseShellExecute = false;
+            p.StartInfo.RedirectStandardInput = true;
+            p.StartInfo.RedirectStandardOutput = true;
+            p.StartInfo.RedirectStandardError = true;
+            p.StartInfo.CreateNoWindow = false;
+            p.Start();
+            string strOutput = null;
+            //   p.StandardInput.WriteLine("cd D:\\flv\\mplayer");
+            //   p.StandardInput.WriteLine("cd d:");
+            // p.StandardInput.WriteLine(string.Format("D:\\flv\\mplayer\\mencoder \"c:\\vs.wmv\" -o \"c:\\output.flv\" -of lavf  -lavfopts i_certify_that_my_video_stream_does_not_use_b_frames -oac mp3lame -lameopts abr:br=56 -ovc lavc -lavcopts vcodec=flv:vbitrate={0}:mbd=2:mv0:trell:v4mv:cbp:last_pred=3:dia=4:cmp=6:vb_strategy=1 -vf scale=512:-3 -ofps 12 -srate 22050", 200));
+            p.StandardInput.WriteLine(@"c: ");  //先转到系统盘下
+            p.StandardInput.WriteLine(@"cd: C:\Program Files (x86)\MSBuild\14.0\Bin");  //先转到系统盘下
+            p.StandardInput.WriteLine("exit");
+            strOutput = p.StandardOutput.ReadToEnd();
+            Console.WriteLine(strOutput);
+            p.WaitForExit();
+            
+            p.Close();
+        }
         }
     }
