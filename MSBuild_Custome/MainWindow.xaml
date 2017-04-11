@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MSBuild_Custome"
         mc:Ignorable="d"
-        Title="自动打包" Height="350" Width="525">
+        Title="自动打包" Height="700" Width="625">
     <Window.Resources>
         <Style TargetType="TextBlock">
             <Setter Property="Height" Value="20"/>
@@ -20,19 +20,24 @@
         </Style>
     </Window.Resources>
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <ListView x:Name="lbshow" Grid.Row="1"  ></ListView>
+    <Grid >
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition/>
-            <RowDefinition/>
-            <RowDefinition/>
-            <RowDefinition/>
-            <RowDefinition/>
-            <RowDefinition/>
-            <RowDefinition/>
-            <RowDefinition/>
+            
+            <RowDefinition Height="50"/>
+            <RowDefinition Height="50"/>
+            <RowDefinition Height="50"/>
+            <RowDefinition Height="50"/>
+            <RowDefinition Height="50"/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <TextBlock  Text="package方案"/>
         <TextBox Grid.Column="1" x:Name="tbPackage"/>
@@ -44,5 +49,5 @@
         <TextBlock  Grid.Row="3" Text="安装包名称"/>
         <TextBox Grid.Column="1" Grid.Row="3" x:Name="tbPackageName"/>
         <Button Grid.Row="4" Width="70" Height="32" Content="编译" Click="Button_Click"/>
-    </Grid>
+    </Grid></Grid>
 </Window>
