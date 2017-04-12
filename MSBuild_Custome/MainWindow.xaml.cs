@@ -30,12 +30,13 @@ namespace MSBuild_Custome
       
         private void Button_Click(object sender, RoutedEventArgs e)
             {
+
             new Thread(() => {
             //项目路径
              var PackagePath = @"F:\WorkPlace\DigitalBook\DigitalBook.sln";//tbProjectPath.Text;
             //编译Msbuild地址
                 string currentdir = System.IO.Path.Combine( Environment.CurrentDirectory , "Output");
-                string commands = string.Format(@"{0}  /p:Configuration=Release,OutDir={1}  /flp1:logfile=errors.txt;errorsonly", PackagePath, currentdir);
+                string commands = string.Format(@"{0} /t:Build /p:TargetFramework=v4.0 /p:Configuration=Release  /flp1:logfile=errors.txt;errorsonly", PackagePath, currentdir);
                 Directory.Delete(currentdir,true);
             Process p = new Process();
             p.StartInfo.FileName = @"C:\Program Files (x86)\MSBuild\14.0\Bin\MSBuild.exe";
