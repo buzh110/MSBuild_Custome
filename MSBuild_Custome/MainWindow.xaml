@@ -49,5 +49,6 @@
         <TextBlock  Grid.Row="3" Text="安装包名称"/>
         <TextBox Grid.Column="1" Grid.Row="3" x:Name="tbPackageName"/>
         <Button Grid.Row="4" Width="70" Height="32" Content="编译" Click="Button_Click"/>
-    </Grid></Grid>
+            <Button Grid.Row="4" Grid.Column="1"  Width="70" Height="32" Content="打包" x:Name="btPackage" Click="btPackage_Click"/>
+        </Grid></Grid>
 </Window>
