@@ -37,8 +37,8 @@ namespace MSBuild_Custome
         XmlDocument xmldoc;
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
             {
-            tbProjectPath.Text = @"F:\WorkPlace\DigitalBook\DigitalBook.sln";
-            tbMSBPath.Text = @"C:\Program Files (x86)\MSBuild\14.0\Bin\MSBuild.exe";
+          //  tbProjectPath.Text = @"F:\WorkPlace\DigitalBook\DigitalBook.sln";
+          //  tbMSBPath.Text = @"C:\Program Files (x86)\MSBuild\14.0\Bin\MSBuild.exe";
 
           
             }
@@ -47,7 +47,7 @@ namespace MSBuild_Custome
         /// 初始化xml文件
         /// </summary>
         /// <returns>返回文件路径</returns>
-        private  string InitXml(string filePath)
+        private  void InitXml(string filePath)
             {
             var xmlpath = filePath;
             XmlHelper.CreateXmlDocument(xmlpath, "root", "1.0", "utf-8", "yes");
@@ -57,9 +57,12 @@ namespace MSBuild_Custome
             XmlHelper.CreateOrUpdateXmlNodeByXPath(xmlpath, "root", "XmlPreMode", "");
             //文件对照节点
             XmlHelper.CreateOrUpdateXmlNodeByXPath(xmlpath, "root", "XmlFilesMode", "");
-            return xmlpath;
+           
             }
 
+        /// <summary>
+        /// 完成编译后再copy到指定目录下
+        /// </summary>
         static AutoResetEvent mEvent = new AutoResetEvent(false);
         /// <summary>
         /// 编译按钮
@@ -70,19 +73,65 @@ namespace MSBuild_Custome
             {
             //生成配置文件名称
             if (string.IsNullOrEmpty(tbPackage.Text)) { tbPackage.Text = string.Format("{0}/{1}{2}", Environment.CurrentDirectory, tbPackageName.Text, ".xml"); }
+            //没有则生成xml文件
             if (!Directory.Exists(tbPackage.Text)) InitXml(tbPackage.Text);
+            SaveToXmlFile();
+            var projectPath = tbProjectPath.Text;//tbProjectPath.Text;
+            var msbuildPath = tbMSBPath.Text;
+            Thread msThread = new Thread(() =>
+            {
+                string commands = string.Format(@"{0} /t:Build /p:TargetFramework=v4.0 /p:Configuration=Release  /flp1:logfile=errors.txt;errorsonly", projectPath);
+                Process p = new Process();
+                p.StartInfo.FileName = msbuildPath;
+                p.StartInfo.UseShellExecute = false;
+                p.StartInfo.Arguments = commands;
+                p.StartInfo.RedirectStandardInput = true;
+                p.StartInfo.RedirectStandardOutput = true;
+                p.StartInfo.RedirectStandardError = true;
+                p.StartInfo.CreateNoWindow = true;
+
+                p.Start();
+                p.OutputDataReceived += sortProcess_OutputDataReceived;
+                p.ErrorDataReceived += errorProcess_OutputDataReceived;
+
+                p.StandardInput.AutoFlush = true;
+
+                p.BeginOutputReadLine();
+                p.BeginErrorReadLine();
+                p.WaitForExit();
+
+
+                p.Close();
+                mEvent.Set();
+                p.OutputDataReceived -= sortProcess_OutputDataReceived;
+                p.ErrorDataReceived -= errorProcess_OutputDataReceived;
+            });
+            msThread.Start();
+
+            new Thread(() =>
+            {
+                mEvent.WaitOne();
+                P_Exited(null, null);
+            }).Start();
+            }
+
+        /// <summary>
+        /// 保存新的打包项目文件
+        /// </summary>
+        private void SaveToXmlFile()
+            {
             XElement xe = XElement.Load(tbPackage.Text);
             var list = from s in xe.Elements("XmlPreMode") select s;
-            if (list.Count()>0)
+            if (list.Count() > 0)
                 {
                 XElement first = list.First();
-                          ///替换新的节点
-           first.ReplaceNodes(
-                       new XElement("MSBuildPath", tbMSBPath.Text),
-                    new XElement("ProjectPath", tbProjectPath),
-                   //  new XElement("OutPutPath", (double)dgvBookInfo.CurrentRow.Cells[4].Value),
-                     new XElement("FilterStrings", @"^.+\.(pdb)|(log)$")
-                       );
+                ///替换新的节点
+                first.ReplaceNodes(
+                            new XElement("MSBuildPath", tbMSBPath.Text),
+                         new XElement("ProjectPath", tbProjectPath),
+                          //  new XElement("OutPutPath", (double)dgvBookInfo.CurrentRow.Cells[4].Value),
+                          new XElement("FilterStrings", @"^.+\.(pdb)|(log)$")
+                            );
                 xe.Save(tbPackage.Text);
                 }
             else
@@ -93,44 +142,43 @@ namespace MSBuild_Custome
                     new XElement("ProjectPath", tbProjectPath),
                      //  new XElement("OutPutPath", (double)dgvBookInfo.CurrentRow.Cells[4].Value),
                      new XElement("FilterStrings", @"^.+\.(pdb)|(log)$")));
-                           xe.Add(record);
-                           xe.Save(tbPackage.Text);
+                xe.Add(record);
+                xe.Save(tbPackage.Text);
                 }
-            var projectPath = tbProjectPath.Text;//tbProjectPath.Text;
-            var msbuildPath = tbMSBPath.Text;
-            Thread msThread=   new Thread(() => {
-                string commands = string.Format(@"{0} /t:Build /p:TargetFramework=v4.0 /p:Configuration=Release  /flp1:logfile=errors.txt;errorsonly", projectPath);
-            Process p = new Process();
-            p.StartInfo.FileName = msbuildPath;
-            p.StartInfo.UseShellExecute = false;
-                p.StartInfo.Arguments = commands;
-            p.StartInfo.RedirectStandardInput = true;
-            p.StartInfo.RedirectStandardOutput = true;
-            p.StartInfo.RedirectStandardError = true;
-            p.StartInfo.CreateNoWindow = true;
-      
-            p.Start();
-            p.OutputDataReceived += sortProcess_OutputDataReceived;
-            p.ErrorDataReceived += errorProcess_OutputDataReceived;
+            }
+        /// <summary>
+        /// xml包含文件列表
+        /// </summary>
+        /// <returns>最新的xml文件list</returns>
+        public  List<string> DeleteFiles()
+            {
+            XElement xe = XElement.Load(tbPackage.Text);
+            var list = from s in xe.Elements("XmlFilesMode") select s;
 
-            p.StandardInput.AutoFlush = true;
-            
-            p.BeginOutputReadLine();
-            p.BeginErrorReadLine();
-            p.WaitForExit();
-                
-
-            p.Close();
-             mEvent.Set();
-             p.OutputDataReceived -= sortProcess_OutputDataReceived;
-             p.ErrorDataReceived -= errorProcess_OutputDataReceived;
-         });
-            msThread.Start();
-
-            new Thread(() => {
-                mEvent.WaitOne();
-                P_Exited(null, null);
-            }).Start();
+            if (list.Count() > 0)
+                {
+                XElement first = list.First();
+                ///替换新的节点
+                first.ReplaceNodes(
+                            new XElement("MSBuildPath", tbMSBPath.Text),
+                         new XElement("ProjectPath", tbProjectPath),
+                          //  new XElement("OutPutPath", (double)dgvBookInfo.CurrentRow.Cells[4].Value),
+                          new XElement("FilterStrings", @"^.+\.(pdb)|(log)$")
+                            );
+                xe.Save(tbPackage.Text);
+                }
+            else
+                {
+                XElement record = new XElement(
+            new XElement("XmlPreMode",
+             new XElement("MSBuildPath", tbMSBPath.Text),
+                    new XElement("ProjectPath", tbProjectPath),
+                     //  new XElement("OutPutPath", (double)dgvBookInfo.CurrentRow.Cells[4].Value),
+                     new XElement("FilterStrings", @"^.+\.(pdb)|(log)$")));
+                xe.Add(record);
+                xe.Save(tbPackage.Text);
+                }
+            return default(List<string>);
             }
 
         private void P_Exited(object sender, EventArgs e)
@@ -230,7 +278,8 @@ namespace MSBuild_Custome
 
         private void tbPackage_GotFocus(object sender, RoutedEventArgs e)
             {
-            string filePath = GetFilePath("(*.xml)|*.xml|All files(*.*)|*.*");
+            //string filePath = GetFilePath("(*.xml)|*.xml|All files(*.*)|*.*");
+            string filePath = GetFilePath("(*.xml)|*.xml|(All Files)|*.*");
             if (!string.IsNullOrEmpty(filePath)) {
                 tbPackage.Text = filePath;
                 //文件存在 读取文件并赋值
